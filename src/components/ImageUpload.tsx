@@ -1,6 +1,5 @@
-
 import React, { useState, useCallback } from 'react';
-import { Upload, Image, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
+import { Upload, Image, AlertCircle, CheckCircle, Loader2, Brain } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
