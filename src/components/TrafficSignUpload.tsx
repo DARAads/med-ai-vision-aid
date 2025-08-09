@@ -7,6 +7,8 @@ import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { trafficSignCNN } from '@/services/trafficSignModel';
+import { toast } from 'sonner';
 
 const TrafficSignUpload = ({ onClassificationComplete }) => {
   const [selectedFile, setSelectedFile] = useState(null);
@@ -55,56 +57,45 @@ const TrafficSignUpload = ({ onClassificationComplete }) => {
     }
   };
 
-  const simulateCNNClassification = async () => {
+  const runCNNClassification = async () => {
+    if (!trafficSignCNN.isModelReady()) {
+      toast.error('Model Not Trained', {
+        description: 'Please train the CNN model first before making predictions.'
+      });
+      return;
+    }
+
     setIsAnalyzing(true);
     setProgress(0);
 
     const progressSteps = [
       { step: 15, message: 'Preprocessing image...' },
-      { step: 35, message: 'Loading CNN model...' },
-      { step: 55, message: 'Feature extraction...' },
-      { step: 75, message: 'Running classification...' },
-      { step: 95, message: 'Analyzing confidence...' },
-      { step: 100, message: 'Complete!' }
+      { step: 35, message: 'Loading trained CNN model...' },
+      { step: 55, message: 'Extracting image features...' },
+      { step: 75, message: 'Running neural network inference...' },
+      { step: 95, message: 'Calculating confidence scores...' },
+      { step: 100, message: 'Classification complete!' }
     ];
 
     for (const { step } of progressSteps) {
-      await new Promise(resolve => setTimeout(resolve, 600));
+      await new Promise(resolve => setTimeout(resolve, 500));
       setProgress(step);
     }
 
-    const trafficSigns = [
-      'Stop Sign', 'Speed Limit 30', 'Speed Limit 50', 'Speed Limit 70',
-      'Yield', 'No Entry', 'Turn Right', 'Turn Left', 'Pedestrian Crossing',
-      'School Zone', 'Construction', 'Parking', 'One Way'
-    ];
-
-    const randomSign = trafficSigns[Math.floor(Math.random() * trafficSigns.length)];
-    const confidence = 0.85 + Math.random() * 0.14;
-
-    const mockResults = {
-      prediction: randomSign,
-      confidence: confidence,
-      classifications: trafficSigns.map(sign => ({
-        name: sign,
-        probability: sign === randomSign ? confidence : Math.random() * 0.15,
-        category: getSignCategory(sign)
-      })).sort((a, b) => b.probability - a.probability),
-      metadata: {
-        imageSize: '224x224',
-        processingTime: '1.2s',
-        modelVersion: 'TrafficNet-CNN v3.0',
-        dataset: 'German Traffic Sign Recognition Benchmark',
-        accuracy: '98.4%'
-      },
-      recommendations: getSignRecommendations(randomSign),
-      image: imagePreview,
-      timestamp: new Date().toISOString()
-    };
-
-    await new Promise(resolve => setTimeout(resolve, 300));
-    setIsAnalyzing(false);
-    onClassificationComplete(mockResults);
+    try {
+      const results = await trafficSignCNN.predictTrafficSign(imagePreview);
+      setIsAnalyzing(false);
+      onClassificationComplete(results);
+      
+      toast.success('Classification Complete!', {
+        description: `Predicted: ${results.prediction} (${(results.confidence * 100).toFixed(1)}% confidence)`
+      });
+    } catch (error) {
+      setIsAnalyzing(false);
+      toast.error('Classification Failed', {
+        description: error.message || 'An error occurred during classification.'
+      });
+    }
   };
 
   const getSignCategory = (sign) => {
@@ -229,20 +220,23 @@ const TrafficSignUpload = ({ onClassificationComplete }) => {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    <Alert>
-                      <AlertTriangle className="h-4 w-4" />
-                      <AlertDescription>
-                        This traffic sign recognition system is designed for autonomous driving applications. 
-                        Results should be validated in real-world scenarios.
-                      </AlertDescription>
-                    </Alert>
+                  <Alert>
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertDescription>
+                      {trafficSignCNN.isModelReady() 
+                        ? 'CNN model is trained and ready for traffic sign classification.'
+                        : 'Please train the CNN model first using the Model Training tab.'
+                      }
+                    </AlertDescription>
+                  </Alert>
                     <Button 
-                      onClick={simulateCNNClassification} 
+                      onClick={runCNNClassification} 
                       className="w-full bg-orange-600 hover:bg-orange-700" 
                       size="lg"
+                      disabled={!trafficSignCNN.isModelReady()}
                     >
                       <Car className="h-5 w-5 mr-2" />
-                      Classify Traffic Sign
+                      {trafficSignCNN.isModelReady() ? 'Classify Traffic Sign' : 'Train Model First'}
                     </Button>
                   </div>
                 )}

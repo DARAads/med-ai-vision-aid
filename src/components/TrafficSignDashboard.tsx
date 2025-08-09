@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { AlertTriangle, Car, TrendingUp, Users, Database, Clock } from 'lucide-react';
 import TrafficSignUpload from './TrafficSignUpload';
 import TrafficSignResults from './TrafficSignResults';
+import ModelTraining from './ModelTraining';
 
 const TrafficSignDashboard = () => {
   const [currentResults, setCurrentResults] = useState(null);
@@ -82,13 +83,18 @@ const TrafficSignDashboard = () => {
       </div>
 
       <Tabs defaultValue="classify" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="classify">Classification</TabsTrigger>
+          <TabsTrigger value="training">Model Training</TabsTrigger>
           <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
         </TabsList>
 
         <TabsContent value="classify">
           <TrafficSignUpload onClassificationComplete={handleClassificationComplete} />
+        </TabsContent>
+
+        <TabsContent value="training">
+          <ModelTraining />
         </TabsContent>
 
         <TabsContent value="dashboard" className="space-y-6">
